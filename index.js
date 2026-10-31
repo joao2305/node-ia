@@ -15,38 +15,44 @@ const historico = [
 ];
 while (true) {
     const pergunta = await rl.question("Você: ");
-
     if (pergunta.toLowerCase() === "sair") {
-        break;
+            break;
+        }
+    try{
+
+        const resposta = await fetch(
+        "https://api.groq.com/openai/v1/chat/completions",
+        {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${process.env.GROQ_API_KEY}`
+            },
+            body: JSON.stringify({
+                model: "openai/gpt-oss-120b",
+                messages: historico
+            })
+        }
+    );
+
+    const dados = await resposta.json();
+    if (!resposta.ok) {
+        console.log("Erro na API:", dados.error?.message);
+        continue;
     }
 
     historico.push({
-        role: "user",
-        content: pergunta
-    });
+            role: "user",
+            content: pergunta
+        });
 
-    const resposta = await fetch(
-    "https://api.groq.com/openai/v1/chat/completions",
-    {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${process.env.GROQ_API_KEY}`
-        },
-        body: JSON.stringify({
-            model: "openai/gpt-oss-120b",
-            messages: historico
-        })
+    console.log(dados.choices[0].message.content);
+    historico.push(dados.choices[0].message);
+
     }
-);
-
-const dados = await resposta.json();
-if (!resposta.ok) {
-    console.log("Erro na API:", dados.error?.message);
-    continue;
-}
-console.log(dados.choices[0].message.content);
-historico.push(dados.choices[0].message);
+    catch (error) {
+        console.error("Erro ao processar a pergunta:", error);
+    }
 }
 
 rl.close();
